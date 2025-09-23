@@ -100,7 +100,7 @@ func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
 }
 
 func (a *Agent) Run() {
-	slog.Info("starting agent", "id", a.ID)
+	a.logger.Info("starting agent")
 
 	for m := range a.subscription.Channel() {
 		var msg Message
