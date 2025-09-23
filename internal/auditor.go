@@ -31,6 +31,8 @@ func (a *Auditor) Run() {
 
 	for msg := range a.AuditLog {
 		slog.Debug("auditing message", "sender", msg.Metadata.Sender, "contents", msg.Contents)
+		// TODO: Buffer these writes if they become a bottleneck, but they should probably be okay
+		// since they are run in a separate goroutine and the rest of the app is bound by LLM latency
 		fmt.Fprintf(f, "[%s] %s - %s\n", msg.Metadata.SentAt, msg.Metadata.Sender, msg.Contents)
 	}
 }
