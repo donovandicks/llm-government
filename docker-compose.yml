@@ -1,4 +1,20 @@
 services:
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    environment:
+      - GF_PATHS_DATA=/data/grafana
+    ports:
+      - 3004:3000 # User Interface
+      - 3100:3100 # Loki
+      - 4040:4040 # Pyroscope
+      - 4317:4317 # gRPC endpoint
+      - 4318:4318 # HTTP endpoint
+    volumes:
+      - "${PWD}/lgtm/grafana:/data/grafana"
+      - "${PWD}/lgtm/prometheus:/data/prometheus"
+      - "${PWD}/lgtm/loki:/data/loki"
+      - "${PWD}/lgtm/pyroscope:/data/pyroscope"
+
   cache:
     image: redis:8
     ports:
@@ -22,3 +38,4 @@ services:
       CACHE_ADDR: cache:6379
       LOG_LEVEL: DEBUG
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OTEL_SERVICE_NAME: app

@@ -13,6 +13,8 @@ import (
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/responses"
 	"github.com/openai/openai-go/shared"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var SystemPrompt string = new(PromptBuilder).
@@ -61,12 +63,18 @@ func (a *Agent) Publish(ctx context.Context, msg string) {
 }
 
 func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
+	ctx, span := Tracer.Start(ctx, "read message", trace.WithAttributes(
+		attribute.String("model", a.model),
+		attribute.String("agent", a.ID),
+	))
+	defer span.End()
+
 	// TODO: We need to keep track of message history pretty much immediately
 	prompt := new(PromptBuilder).
 		WithTask("You have received a new message. Read it and generate a reply.").
 		WithItems(
 			fmt.Sprintf("You are agent %s", a.ID),
-			fmt.Sprintf("The sender agent was %s", msg.Sender),
+			fmt.Sprintf("The sender agent was %s", msg.Metadata.Sender),
 			fmt.Sprintf("The message was sent at %s", msg.Metadata.SentAt),
 			fmt.Sprintf("The current time is %s", time.Now().Format(time.RFC3339)),
 		).

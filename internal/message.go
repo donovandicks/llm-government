@@ -9,21 +9,21 @@ import (
 
 type Metadata struct {
 	ID     string `json:"id"`     // Unique identifier of the specific message
+	Sender string `json:"sender"` // The ID of the agent that sent the message
 	SentAt string `json:"sentAt"` // RFC3339 When the message was sent by the agent
 }
 
 type Message struct {
-	Sender   string   `json:"sender"`   // The ID of the agent that sent the message
 	Contents string   `json:"contents"` // The actual contents of the message
 	Metadata Metadata `json:"metadata"`
 }
 
 func NewMessage(sender, contents string) Message {
 	return Message{
-		Sender:   sender,
 		Contents: contents,
 		Metadata: Metadata{
 			ID:     uuid.NewString(),
+			Sender: sender,
 			SentAt: time.Now().Format(time.RFC3339),
 		},
 	}
