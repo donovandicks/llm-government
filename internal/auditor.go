@@ -30,7 +30,7 @@ func (a *Auditor) Run() {
 	defer f.Close()
 
 	for msg := range a.AuditLog {
-		slog.Debug("auditing message", "sender", msg.Sender, "contents", msg.Contents)
-		fmt.Fprintf(f, "[%s] %s - %s\n", msg.Metadata.SentAt, msg.Sender, msg.Contents)
+		slog.Debug("auditing message", "sender", msg.Metadata.Sender, "contents", msg.Contents)
+		fmt.Fprintf(f, "[%s] %s - %s\n", msg.Metadata.SentAt, msg.Metadata.Sender, msg.Contents)
 	}
 }

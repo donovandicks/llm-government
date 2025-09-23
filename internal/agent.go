@@ -110,8 +110,8 @@ func (a *Agent) Run() {
 			continue
 		}
 
-		if msg.Sender == a.ID {
-			// Skip reading messages sent by the current agent
+		// Skip reading messages sent by the current agent
+		if msg.Metadata.Sender == a.ID {
 			continue
 		}
 
