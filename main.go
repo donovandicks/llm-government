@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/donovandicks/llm-government/internal"
@@ -11,13 +10,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func init() {
-	// TODO: Parameterize
-	slog.SetLogLoggerLevel(slog.LevelDebug)
-}
-
 func main() {
 	ctx := context.Background()
+	shutdown, err := internal.SetupOTelSDK(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer shutdown(ctx)
 
 	channel := "llm-messages"
 
