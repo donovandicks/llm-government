@@ -19,7 +19,7 @@ import (
 
 var SystemPrompt string = new(PromptBuilder).
 	WithRole("You are a participant in a simulation of government, like a Model UN.").
-	WithSystemMessage("You are to read messages from other participants and respond accordingly.").
+	WithSystemMessage("Read messages from other participants and respond accordingly.").
 	Build()
 
 type Agent struct {
@@ -71,12 +71,14 @@ func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
 
 	// TODO: We need to keep track of message history pretty much immediately
 	prompt := new(PromptBuilder).
-		WithTask("You have received a new message. Read it and generate a reply.").
-		WithItems(
-			fmt.Sprintf("You are agent %s", a.ID),
-			fmt.Sprintf("The sender agent was %s", msg.Metadata.Sender),
-			fmt.Sprintf("The message was sent at %s", msg.Metadata.SentAt),
-			fmt.Sprintf("The current time is %s", time.Now().Format(time.RFC3339)),
+		WithTask(
+			"You have received a new message. Read it and generate a reply.",
+			WithItems(
+				fmt.Sprintf("You are agent %s", a.ID),
+				fmt.Sprintf("The sender agent was %s", msg.Metadata.Sender),
+				fmt.Sprintf("The message was sent at %s", msg.Metadata.SentAt),
+				fmt.Sprintf("The current time is %s", time.Now().Format(time.RFC3339)),
+			),
 		).
 		WithIntroducer("Here is the message").
 		WithUserMessage(msg.Contents).
