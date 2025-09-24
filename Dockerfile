@@ -12,7 +12,8 @@ RUN go build -o ./dist/main ./main.go
 
 FROM gcr.io/distroless/static-debian12
 WORKDIR /app
+COPY simulation.yaml .
 COPY --from=build /app/dist/main ./main
 EXPOSE 9000
-ENTRYPOINT ["/app/main"]
+ENTRYPOINT ["/app/main", "-from-file", "simulation.yaml"]
 

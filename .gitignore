@@ -2,3 +2,5 @@ dist/
 lgtm/
 .env
 *.log
+simulation.json
+simulation.y*
