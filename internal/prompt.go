@@ -9,6 +9,10 @@ func writePrompt(builder *strings.Builder, tag, content string) {
 	fmt.Fprintf(builder, "<%s>%s</%s>\n", tag, content, tag)
 }
 
+func writePromptf(builder *strings.Builder, tag, content string, args ...string) {
+	fmt.Fprintf(builder, "<%s>%s</%s>\n", tag, fmt.Sprintf(content, args), tag)
+}
+
 type Example struct {
 	Input  string
 	Output string
@@ -43,6 +47,11 @@ type PromptBuilder struct {
 
 func (p *PromptBuilder) WithRole(role string) *PromptBuilder {
 	writePrompt(&p.builder, "role", role)
+	return p
+}
+
+func (p *PromptBuilder) WithRolef(role string, args ...string) *PromptBuilder {
+	writePromptf(&p.builder, "role", role, args...)
 	return p
 }
 
