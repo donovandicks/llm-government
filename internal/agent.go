@@ -17,35 +17,42 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var SystemPrompt string = new(PromptBuilder).
-	WithRole("You are a participant in a simulation of government, like a Model UN.").
-	WithSystemMessage("Read messages from other participants and respond accordingly.").
-	Build()
-
 type Agent struct {
-	ID       string
-	logger   *slog.Logger
-	auditLog chan Message
+	ID         string
+	logger     *slog.Logger
+	auditLog   chan Message
+	simulation Simulation
 
-	client openai.Client
-	model  string
+	client       openai.Client
+	model        string
+	systemPrompt string
 
 	cache        *redis.Client
 	channel      string
 	subscription *redis.PubSub
 }
 
-func NewAgent(ctx context.Context, cache *redis.Client, channel string, auditLog chan Message) *Agent {
+func NewAgent(ctx context.Context, sim Simulation, cache *redis.Client, channel string, auditLog chan Message) *Agent {
 	agentId := uuid.NewString()
 	subscription := cache.Subscribe(ctx, channel)
 	logger := slog.With("agentId", agentId)
+
+	systemPrompt := new(PromptBuilder).
+		WithRole("You are acting in a simulation with other agents.").
+		WithIntroducer("Here is the scenario.").
+		WithParagraph(sim.Scenario).
+		// TODO: Incorporate other simulation details
+		WithSystemMessage("Read messages from other participants and respond accordingly.").
+		Build()
 
 	return &Agent{
 		ID:           agentId,
 		logger:       logger,
 		auditLog:     auditLog,
+		simulation:   sim,
 		client:       openai.NewClient(),
 		model:        "gpt-5",
+		systemPrompt: systemPrompt,
 		cache:        cache,
 		channel:      channel,
 		subscription: subscription,
@@ -64,8 +71,10 @@ func (a *Agent) Publish(ctx context.Context, msg string) {
 
 func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
 	ctx, span := Tracer.Start(ctx, "read message", trace.WithAttributes(
+		attribute.String("simulation", a.simulation.ID()),
 		attribute.String("model", a.model),
 		attribute.String("agent", a.ID),
+		attribute.String("systemPrompt", a.systemPrompt),
 	))
 	defer span.End()
 
@@ -86,11 +95,9 @@ func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
 
 	params := responses.ResponseNewParams{
 		Model:        a.model,
-		Instructions: openai.String(SystemPrompt),
-		Input: responses.ResponseNewParamsInputUnion{
-			OfString: openai.String(prompt),
-		},
-		Reasoning: shared.ReasoningParam{Effort: shared.ReasoningEffortMedium},
+		Instructions: openai.String(a.systemPrompt),
+		Input:        responses.ResponseNewParamsInputUnion{OfString: openai.String(prompt)},
+		Reasoning:    shared.ReasoningParam{Effort: shared.ReasoningEffortMedium},
 	}
 
 	response, err := a.client.Responses.New(ctx, params)
@@ -98,7 +105,10 @@ func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
 		return "", err
 	}
 
-	return response.OutputText(), nil
+	text := response.OutputText()
+	span.SetAttributes(attribute.String("response", text))
+
+	return text, nil
 }
 
 func (a *Agent) Run() {
@@ -126,7 +136,6 @@ func (a *Agent) Run() {
 
 		a.Publish(ctx, reply)
 
-		// 3. Take Action?
-		// 4. Reply?
+		// Take Action?
 	}
 }
