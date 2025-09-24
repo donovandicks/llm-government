@@ -111,6 +111,26 @@ func (a *Agent) readMessage(ctx context.Context, msg Message) (string, error) {
 	return text, nil
 }
 
+func (a *Agent) Observe(ctx context.Context, w *World) Observation {
+	w.RLock()
+	defer w.RUnlock()
+
+	inputs := make(map[string]any)
+	for name, in := range w.inputs {
+		inputs[name] = in.Get()
+	}
+
+	return Observation{
+		Tick:   w.tick,
+		Inputs: inputs,
+	}
+}
+
+func (a *Agent) Decide(ctx context.Context, obs Observation) []Action {
+	// TODO: Implement
+	panic("unimplemented")
+}
+
 func (a *Agent) Run() {
 	a.logger.Info("starting agent")
 
