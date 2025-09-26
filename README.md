@@ -17,6 +17,9 @@ structures and systems of government.
 - [ ] Simulation Feedback
   - [ ] Tools for agents to actually apply policies
   - [ ] Subjects on which policies take effect
+- [ ] Self Evolution
+  - [ ] Explore if it's possible for agents to adjust the simulation itself
+        either through config settings or modifying their own code
 
 ## Simulation
 
