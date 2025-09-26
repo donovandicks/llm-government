@@ -37,57 +37,76 @@ func (m Message) Bytes() []byte {
 }
 
 type MessageBus interface {
-	Publish(context.Context, Message) error
-	Subscribe(ctx context.Context, subscriber string) (<-chan Message, error)
+	// TODO: Consider merging AuditLog with the MessageBus
+	PublishAudit(context.Context, Message) error
+	Publish(context.Context, string, string) error
+	Subscribe(ctx context.Context, subscriber string)
 	Drain(ctx context.Context, subscriber string) []Message
 }
 
 type InMemoryBus struct {
 	sync.Mutex
 
-	buffers map[string][]Message // Message buffers registered per subscriber
+	auditLog chan<- Message       // Audit log records all messages published on the bus
+	buffers  map[string][]Message // Message buffers registered per subscriber
 }
 
-func (b *InMemoryBus) Publish(ctx context.Context, msg Message) error {
+func NewInMemoryMessageBus(auditLog chan<- Message) *InMemoryBus {
+	return &InMemoryBus{
+		auditLog: auditLog,
+		buffers:  make(map[string][]Message),
+	}
+}
+
+func (b *InMemoryBus) PublishAudit(ctx context.Context, msg Message) error {
+	b.auditLog <- msg
+	return nil
+}
+
+func (b *InMemoryBus) Publish(ctx context.Context, from, msg string) error {
 	b.Lock()
 	defer b.Unlock()
+
+	message := NewMessage(from, msg)
+
+	b.PublishAudit(ctx, message)
 
 	// NOTE: Consider supporting direct messages between agents.
 	// Consider making this configurable, e.g. DM_ALLOWED, to allow
 	// agents to communicate "in private"
 
 	for subscriber := range b.buffers {
-		if subscriber == msg.Metadata.Sender {
+		if subscriber == from {
 			continue
 		}
 
-		b.buffers[subscriber] = append(b.buffers[subscriber], msg)
+		b.buffers[subscriber] = append(b.buffers[subscriber], message)
 	}
 
 	return nil
 }
 
-func (b *InMemoryBus) Subscribe(ctx context.Context, subscriber string) (<-chan Message, error) {
+func (b *InMemoryBus) Subscribe(ctx context.Context, subscriber string) {
 	b.Lock()
 	defer b.Unlock()
 
 	b.buffers[subscriber] = []Message{}
 
-	ch := make(chan Message)
-
-	// TODO: Implement function to grab messages from the buffer and drop into the channel
-	go func() {
-		ticker := time.NewTicker(10 * time.Millisecond)
-		defer ticker.Stop()
-		for range ticker.C {
-			msgs := b.Drain(ctx, subscriber)
-			for _, m := range msgs {
-				ch <- m
-			}
-		}
-	}()
-
-	return ch, nil
+	// ch := make(chan Message)
+	//
+	// // TODO: Implement function to grab messages from the buffer and drop into the channel
+	// go func() {
+	// 	ticker := time.NewTicker(10 * time.Millisecond)
+	// 	defer ticker.Stop()
+	// 	for range ticker.C {
+	// 		msgs := b.Drain(ctx, subscriber)
+	// 		for _, m := range msgs {
+	// 			ch <- m
+	// 		}
+	// 	}
+	// }()
+	//
+	// return ch, nil
 }
 
 func (b *InMemoryBus) Drain(ctx context.Context, subscriber string) []Message {

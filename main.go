@@ -3,16 +3,16 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/donovandicks/llm-government/internal"
-
-	"github.com/go-redis/redis/v8"
 )
 
 var (
+	TickDuration time.Duration = 16667 * time.Microsecond
+
 	sim      internal.Simulation = internal.Simulation{}
 	fromFile string              = ""
 )
@@ -49,26 +49,26 @@ func main() {
 	parseArgs()
 	slog.Debug("parsed simulation", "simulation", sim)
 
-	channel := "llm-messages"
-
-	cache := redis.NewClient(&redis.Options{
-		Addr: os.Getenv("CACHE_ADDR"),
-	})
-
 	auditor := internal.NewAuditor()
 	defer auditor.Stop()
-
-	agent1 := internal.NewAgent(ctx, sim, cache, channel, auditor.AuditLog)
-	defer agent1.Stop()
-
-	agent2 := internal.NewAgent(ctx, sim, cache, channel, auditor.AuditLog)
-	defer agent2.Stop()
-
 	go auditor.Run()
-	go agent1.Run()
-	go agent2.Run()
 
-	agent1.Publish(ctx, fmt.Sprintf("Hello everyone, I am agent %s. Nice to meet you.", agent1.ID))
-	for {
-	}
+	world := internal.NewWorld().
+		RegisterOutput(new(internal.ApprovalMetric))
+
+	bus := internal.NewInMemoryMessageBus(auditor.AuditLog)
+
+	council := internal.NewCouncil(bus, world, internal.CouncilOptions{MaxRounds: 3}).
+		RegisterAgents(
+			internal.NewAgent(ctx, sim, bus),
+			internal.NewAgent(ctx, sim, bus),
+		)
+
+	go func() {
+		for {
+			world.Tick(ctx, TickDuration)
+		}
+	}()
+
+	council.Start(ctx)
 }

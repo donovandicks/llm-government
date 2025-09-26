@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// TODO: Parameterize audit backend, e.g. FileSystem vs. Database vs. etc.
 type Auditor struct {
 	AuditLog chan Message
 }
