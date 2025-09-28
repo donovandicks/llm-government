@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 )
 
 // ArchetypeSignature is a unique identifier representing a specific
@@ -11,7 +12,13 @@ import (
 type ArchetypeSignature []ComponentID
 
 func (as ArchetypeSignature) String() string {
-	return fmt.Sprintf("%v", as)
+	var sb strings.Builder
+	sb.WriteRune('[')
+	for _, id := range as {
+		sb.WriteString(fmt.Sprintf("%v", id))
+	}
+	sb.WriteRune(']')
+	return sb.String()
 }
 
 func MakeSignature(components ...Component) ArchetypeSignature {
@@ -24,11 +31,11 @@ func MakeSignature(components ...Component) ArchetypeSignature {
 }
 
 type Archetype struct {
-	Signature      ArchetypeSignature
-	EntityMap      map[EntityID]int             // Map an entity to its index in the component slice.
-	Entities       []EntityID                   // List of entities matching this archetype.
-	Components     map[ComponentID]any          // ComponentID->[]ComponentType
-	ComponentTypes map[ComponentID]reflect.Type // ComponentID->Go Type
+	Signature      ArchetypeSignature           `json:"signature"`
+	EntityMap      map[EntityID]int             `json:"entityMap"`  // Map an entity to its index in the component slice.
+	Entities       []EntityID                   `json:"-"`          // List of entities matching this archetype.
+	Components     map[ComponentID]any          `json:"components"` // ComponentID->[]<ComponentType>
+	ComponentTypes map[ComponentID]reflect.Type `json:"-"`          // ComponentID->Go Type
 }
 
 func NewArchetype(components ...Component) *Archetype {

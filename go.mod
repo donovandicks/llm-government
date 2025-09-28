@@ -3,6 +3,7 @@ module github.com/donovandicks/llm-government
 go 1.25.1
 
 require (
+	github.com/go-faker/faker/v4 v4.7.0
 	github.com/google/uuid v1.6.0
 	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go v1.2.7
@@ -39,7 +40,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250825161204-c5933d9347a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250825161204-c5933d9347a5 // indirect
 	google.golang.org/grpc v1.75.0 // indirect

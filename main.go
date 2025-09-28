@@ -56,12 +56,9 @@ func main() {
 	world := internal.NewWorld().
 		RegisterOutput(new(internal.ApprovalMetric))
 
-	// TODO: Register citizens
-	// for range 10 {
-	// 	world.NewEntity(
-	//
-	// 	)
-	// }
+	for range 5 {
+		world.RegisterEntity(internal.NewPersonEntity()...)
+	}
 
 	bus := internal.NewInMemoryMessageBus(auditor.AuditLog)
 

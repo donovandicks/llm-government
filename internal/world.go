@@ -2,16 +2,22 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"time"
 )
 
 type Observation struct {
-	Tick      int64                  `json:"tick"`
-	Timestamp int64                  `json:"timestamp"`
-	Inputs    map[string]any         `json:"inputs"`
-	Outputs   map[string]OutputValue `json:"outputs"`
-	// Seed    int64
+	Tick       int64                  `json:"tick"`
+	Timestamp  int64                  `json:"timestamp"`
+	Archetypes []*Archetype           `json:"archetypes"`
+	Inputs     map[string]any         `json:"inputs"`
+	Outputs    map[string]OutputValue `json:"outputs"`
+}
+
+func (o *Observation) ToJSON() string {
+	bs, _ := json.Marshal(o)
+	return string(bs)
 }
 
 type QueryResult struct {
@@ -76,7 +82,7 @@ func (w *World) GetOutput(name string) (Output, bool) {
 	return out, ok
 }
 
-func (w *World) NewEntity(components ...Component) EntityID {
+func (w *World) RegisterEntity(components ...Component) EntityID {
 	entity := w.nextEntityID
 	w.nextEntityID++
 
@@ -150,10 +156,16 @@ func (w *World) Observe(ctx context.Context) Observation {
 		outputs[name] = out.Compute(ctx, w)
 	}
 
+	archs := make([]*Archetype, 0, len(w.archetypes))
+	for _, v := range w.archetypes {
+		archs = append(archs, v)
+	}
+
 	return Observation{
-		Tick:      w.tick,
-		Timestamp: time.Now().UnixMilli(),
-		Inputs:    inputs,
-		Outputs:   outputs,
+		Tick:       w.tick,
+		Timestamp:  time.Now().UnixMilli(),
+		Archetypes: archs,
+		Inputs:     inputs,
+		Outputs:    outputs,
 	}
 }
