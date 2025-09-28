@@ -1,3 +1,3 @@
 package internal
 
-type EntityID int64
+type EntityID uint

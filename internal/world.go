@@ -14,20 +14,33 @@ type Observation struct {
 	// Seed    int64
 }
 
+type QueryResult struct {
+	Archetype  *Archetype
+	Components []any
+	Count      int
+}
+
 type World struct {
 	sync.RWMutex
+
+	clock time.Duration
+	tick  int64
 
 	inputs  map[string]Input
 	outputs map[string]Output
 
-	clock time.Duration
-	tick  int64
+	nextEntityID EntityID
+	archetypes   map[string]*Archetype
+	entityIndex  map[EntityID]*Archetype
 }
 
 func NewWorld() *World {
 	return &World{
-		inputs:  make(map[string]Input),
-		outputs: make(map[string]Output),
+		inputs:       make(map[string]Input),
+		outputs:      make(map[string]Output),
+		nextEntityID: 0,
+		archetypes:   make(map[string]*Archetype),
+		entityIndex:  make(map[EntityID]*Archetype),
 	}
 }
 
@@ -61,6 +74,47 @@ func (w *World) GetOutput(name string) (Output, bool) {
 
 	out, ok := w.outputs[name]
 	return out, ok
+}
+
+func (w *World) NewEntity(components ...Component) EntityID {
+	entity := w.nextEntityID
+	w.nextEntityID++
+
+	signature := MakeSignature(components...)
+	signKey := signature.String()
+
+	arch, ok := w.archetypes[signKey]
+	if !ok {
+		arch = NewArchetype(components...)
+		w.archetypes[signKey] = arch
+	}
+
+	arch.AddEntity(entity, components...)
+	w.entityIndex[entity] = arch
+
+	return entity
+}
+
+func (w *World) Query(components ...Component) []QueryResult {
+	querySignature := MakeSignature(components...)
+
+	var results []QueryResult
+	for _, arch := range w.archetypes {
+		if arch.HasComponents(querySignature) {
+			result := QueryResult{
+				Archetype:  arch,
+				Components: make([]any, len(querySignature)),
+				Count:      len(arch.Entities),
+			}
+
+			for idx, id := range querySignature {
+				result.Components[idx] = arch.Components[id]
+			}
+			results = append(results, result)
+		}
+	}
+
+	return results
 }
 
 // Tick processes the world one dt at a time.
