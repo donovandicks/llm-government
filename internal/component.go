@@ -38,6 +38,7 @@ type IdentityComponent struct {
 
 type StatComponent struct {
 	Health int // 0 - 100
+	Money  int
 	// Hunger
 	// Energy
 	// Stress

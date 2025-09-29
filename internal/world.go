@@ -8,11 +8,11 @@ import (
 )
 
 type Observation struct {
-	Tick       int64                  `json:"tick"`
-	Timestamp  int64                  `json:"timestamp"`
-	Archetypes []*Archetype           `json:"archetypes"`
-	Inputs     map[string]any         `json:"inputs"`
-	Outputs    map[string]OutputValue `json:"outputs"`
+	Tick      int64                  `json:"tick"`
+	Timestamp int64                  `json:"timestamp"`
+	People    []Person               `json:"people"`
+	Inputs    map[string]any         `json:"inputs"`
+	Outputs   map[string]OutputValue `json:"outputs"`
 }
 
 func (o *Observation) ToJSON() string {
@@ -21,9 +21,9 @@ func (o *Observation) ToJSON() string {
 }
 
 type QueryResult struct {
-	Archetype  *Archetype
-	Components []any
-	Count      int
+	Archetype  *Archetype `json:"-"`
+	Components []any      `json:"components"`
+	Count      int        `json:"count"`
 }
 
 type World struct {
@@ -156,16 +156,17 @@ func (w *World) Observe(ctx context.Context) Observation {
 		outputs[name] = out.Compute(ctx, w)
 	}
 
-	archs := make([]*Archetype, 0, len(w.archetypes))
-	for _, v := range w.archetypes {
-		archs = append(archs, v)
-	}
+	persons := w.Query([]Component{
+		IdentityComponent{},
+		StatComponent{},
+		MoodComponent{},
+	}...)[0].ToPersons()
 
 	return Observation{
-		Tick:       w.tick,
-		Timestamp:  time.Now().UnixMilli(),
-		Archetypes: archs,
-		Inputs:     inputs,
-		Outputs:    outputs,
+		Tick:      w.tick,
+		Timestamp: time.Now().UnixMilli(),
+		People:    persons,
+		Inputs:    inputs,
+		Outputs:   outputs,
 	}
 }

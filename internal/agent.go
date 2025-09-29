@@ -127,6 +127,7 @@ func (a *Agent) Run(ctx context.Context, obs *Observation) {
 		attribute.String("simulation", a.simulation.ID()),
 		attribute.String("model", a.model),
 		attribute.String("agent", a.ID),
+		attribute.String("observation", obs.ToJSON()),
 	))
 	defer span.End()
 
